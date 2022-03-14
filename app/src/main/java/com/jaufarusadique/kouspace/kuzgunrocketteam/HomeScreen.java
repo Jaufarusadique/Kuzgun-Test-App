@@ -68,6 +68,7 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
     byte[]           readBuffer;
     Thread           workerThread;
     private static final int PERMISSION_REQUEST_STORAGE = 1000;
+    private  boolean proceedConnection = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,32 +107,40 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
     }
 
     public void connect(){
-        try {
-            socket = (BluetoothSocket)result.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(result,1);
-        } catch (IllegalAccessException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-        } catch (InvocationTargetException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-        } catch (NoSuchMethodException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-        try {
-            socket.connect();
+        if(proceedConnection) {
             try {
-                outputStream = socket.getOutputStream();
-            } catch (IOException e) {
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();;
-            }
-            try {
-                inputStream  = socket.getInputStream();
-                beginListenForData();
-            } catch (IOException e) {
+                Toast.makeText(this, "Connecting to " + myArduino, Toast.LENGTH_SHORT).show();
+                socket = (BluetoothSocket) result.getClass().getMethod("createRfcommSocket", new Class[]{int.class}).invoke(result, 1);
+            } catch (IllegalAccessException e) {
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+            } catch (InvocationTargetException e) {
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+            } catch (NoSuchMethodException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
+            try {
+                socket.connect();
+                try {
+                    outputStream = socket.getOutputStream();
+                } catch (IOException e) {
+                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    ;
+                }
+                try {
+                    inputStream = socket.getInputStream();
+                    beginListenForData();
+                } catch (IOException e) {
+                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
 
-        } catch (IOException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            connectionDialog();
+            } catch (IOException e) {
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                connectionDialog();
+            }
+        }
+        else{
+            drawerLayout.openDrawer(GravityCompat.START);
+            Toast.makeText(this, "Please select a device", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -261,6 +270,7 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         writeToFile(item.getTitle().toString());
+        readFromFile();
         scanForDevices();
         return false;
     }
@@ -277,13 +287,17 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
                 stringBuilder.append(line);
                 line = br.readLine();
             }
+            if(!stringBuilder.toString().equals("null")){
+                proceedConnection = true;
+                myArduino = stringBuilder.toString();
+            }else{
+                proceedConnection = false;
+            }
 
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            writeToFile("null");
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
-            myArduino = stringBuilder.toString();
         }
 
     }
@@ -300,14 +314,20 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
     }
 
     public void scanForDevices(){
-        Thread.currentThread().interrupt();
         if (inputStream != null) {
-            try {inputStream.close();} catch (Exception e) {}
+            do {
+                workerThread.interrupt();
+            }while (workerThread.isAlive());
+            try {
+                inputStream.close();
+            } catch (Exception e) {}
             inputStream = null;
         }
 
         if (outputStream != null) {
-            try {outputStream.close();} catch (Exception e) {}
+            try {
+                outputStream.close();
+            } catch (Exception e) {}
             outputStream = null;
         }
         if(socket!=null){
@@ -321,8 +341,7 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
                             socket = null;
                         }
                     }
-                }, 3000L);
-
+                }, 100L);
         }
         if (!bluetoothAdapter.isEnabled()) {
             bluetoothAdapter.enable();
@@ -349,7 +368,11 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
                     break;
                 }
             }
-            connect();
+            new Handler().postDelayed(new Runnable() {
+                public void run() {
+                    connect();
+                }
+            }, 100L);
         }
     }
 
