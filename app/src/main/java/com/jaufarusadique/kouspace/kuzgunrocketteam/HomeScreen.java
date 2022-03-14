@@ -8,11 +8,16 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.SpannableString;
@@ -27,8 +32,11 @@ import android.widget.Toast;
 import com.google.android.material.navigation.NavigationView;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -50,7 +58,7 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
     private BluetoothAdapter        bluetoothAdapter;
     private Set<BluetoothDevice>    pairedDevices;
     private BluetoothSocket         socket;
-    private String                  myArduino           =   "HC-05";
+    private String                  myArduino           =   "BOEING-747";
     private BluetoothDevice         result              =   null;
     private OutputStream            outputStream;
     private InputStream             inputStream;
@@ -59,6 +67,7 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
     int              readBufferPosition;
     byte[]           readBuffer;
     Thread           workerThread;
+    private static final int PERMISSION_REQUEST_STORAGE = 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,44 +89,14 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this,drawerLayout,toolbar,R.string.navigation_drawer_open,R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
-
         readFromFile();
-
         navigationView.setNavigationItemSelectedListener(this);
-
-        bluetoothAdapter    = BluetoothAdapter.getDefaultAdapter();
-
-        //Check if Bluetooth is enabled and enable it
-
-        if (!bluetoothAdapter.isEnabled()) {
-            bluetoothAdapter.enable();
-            do{
-                if(bluetoothAdapter.isEnabled()){
-                    isBluetoothEnabled=true;
-                }
-            }while (!isBluetoothEnabled);
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+        != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},PERMISSION_REQUEST_STORAGE);
         }
-
-        if(bluetoothAdapter.isEnabled()) {
-            pairedDevices = bluetoothAdapter.getBondedDevices();
-            for(BluetoothDevice bt : pairedDevices){
-                menu.add(bt.getName());
-            }
-            for (int i = 0; i < menu.size(); i++) {
-                final MenuItem item = menu.getItem(i);
-                final SpannableString s = new SpannableString(item.getTitle());
-                s.setSpan(new ForegroundColorSpan(Color.WHITE), 0, s.length(), 0);
-                item.setTitle(s);
-            }
-            for (BluetoothDevice bt : pairedDevices) {
-                if (myArduino.equals(bt.getName())) {
-                    result = bt;
-                    break;
-                }
-            }
-            connect();
-        }
-
+        scanForDevices();
         sendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -282,48 +261,107 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         writeToFile(item.getTitle().toString());
-        readFromFile();
-        for (BluetoothDevice bt : pairedDevices) {
-            if (myArduino.equals(bt.getName())) {
-                result = bt;
-                break;
-            }
-        }
-        connect();
+        scanForDevices();
         return false;
     }
 
     public void readFromFile(){
-        try{
-            Toast.makeText(this,"Reading", Toast.LENGTH_SHORT).show();
-            FileInputStream is =openFileInput("preferred_device.txt");
-            InputStreamReader isr = new InputStreamReader(is);
-            BufferedReader br = new BufferedReader(isr);
-            StringBuilder sb = new StringBuilder();
-            String text;
-            while((text=br.readLine())!=null){
-                sb.append(text).append("\n");
+        FileReader fr = null;
+        File file = new File(getExternalFilesDir("Files"),"preferred_device");
+        StringBuilder stringBuilder = new StringBuilder();
+        try {
+            fr = new FileReader(file);
+            BufferedReader br = new BufferedReader(fr);
+            String line = br.readLine();
+            while(line != null){
+                stringBuilder.append(line);
+                line = br.readLine();
             }
-            Toast.makeText(this, sb.toString(), Toast.LENGTH_SHORT).show();
-        }
-        catch (IOException e) {
+
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-        }
-    }
-    public void writeToFile(String device){
-        FileOutputStream os = null;
-        try{
-            os = openFileOutput("preferred_device.txt",MODE_PRIVATE);
-            os.write(device.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }finally {
-            if( os !=null){
-                try {
-                    os.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
+            myArduino = stringBuilder.toString();
+        }
+
+    }
+    public void writeToFile(String device){
+       File file = new File(getExternalFilesDir("Files"),"preferred_device");
+       FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(file);
+            fos.write(device.getBytes());
+        } catch (FileNotFoundException e) {
+           e.printStackTrace();
+        } catch (IOException e) { e.printStackTrace();
+        }
+    }
+
+    public void scanForDevices(){
+        Thread.currentThread().interrupt();
+        if (inputStream != null) {
+            try {inputStream.close();} catch (Exception e) {}
+            inputStream = null;
+        }
+
+        if (outputStream != null) {
+            try {outputStream.close();} catch (Exception e) {}
+            outputStream = null;
+        }
+        if(socket!=null){
+                new Handler().postDelayed(new Runnable() {
+                    public void run() {
+                        try {
+                            socket.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }finally {
+                            socket = null;
+                        }
+                    }
+                }, 3000L);
+
+        }
+        if (!bluetoothAdapter.isEnabled()) {
+            bluetoothAdapter.enable();
+            do{
+                if(bluetoothAdapter.isEnabled()){
+                    isBluetoothEnabled=true;
                 }
+            }while (!isBluetoothEnabled);
+        }
+        if(bluetoothAdapter.isEnabled()) {
+            pairedDevices = bluetoothAdapter.getBondedDevices();
+            for(BluetoothDevice bt : pairedDevices){
+                menu.add(bt.getName());
+            }
+            for (int i = 0; i < menu.size(); i++) {
+                final MenuItem item = menu.getItem(i);
+                final SpannableString s = new SpannableString(item.getTitle());
+                s.setSpan(new ForegroundColorSpan(Color.WHITE), 0, s.length(), 0);
+                item.setTitle(s);
+            }
+            for (BluetoothDevice bt : pairedDevices) {
+                if (myArduino.equals(bt.getName())) {
+                    result = bt;
+                    break;
+                }
+            }
+            connect();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if(requestCode == PERMISSION_REQUEST_STORAGE){
+            if(grantResults[0]==PackageManager.PERMISSION_GRANTED){
+                Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
+            }
+            else{
+                Toast.makeText(this, "Permission Denied!", Toast.LENGTH_SHORT).show();
+                finish();
             }
         }
     }
