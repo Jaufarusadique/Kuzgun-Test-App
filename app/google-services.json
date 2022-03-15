@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "183094136272",
+    "firebase_url": "https://kuzgun-rocket-team-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "kuzgun-rocket-team",
+    "storage_bucket": "kuzgun-rocket-team.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:183094136272:android:d4f88193362ab8d1b1bdd5",
+        "android_client_info": {
+          "package_name": "com.jaufarusadique.arduinobluetooth"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "183094136272-rr146fvsv1cp2auj624c1ouggt8f281s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7s7j71YdjyLHu8jLtXWuJH4Xkqbsk1rI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "183094136272-rr146fvsv1cp2auj624c1ouggt8f281s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

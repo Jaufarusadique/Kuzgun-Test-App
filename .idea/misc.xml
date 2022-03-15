@@ -3,7 +3,10 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/activity_home_screen.xml" value="0.14114583333333333" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/activity_home_screen.xml" value="0.22" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/connecting_progress.xml" value="0.33" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/console_layout.xml" value="0.1287037037037037" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/gps_layout.xml" value="0.14" />
         <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/menu/drawer_menu.xml" value="0.14114583333333333" />
       </map>
     </option>
@@ -13,5 +16,12 @@
   </component>
   <component name="ProjectType">
     <option name="id" value="Android" />
+  </component>
+  <component name="VisualizationToolProject">
+    <option name="state">
+      <ProjectState>
+        <option name="scale" value="0.22" />
+      </ProjectState>
+    </option>
   </component>
 </project>

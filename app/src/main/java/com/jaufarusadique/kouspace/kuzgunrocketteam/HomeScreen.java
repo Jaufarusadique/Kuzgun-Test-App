@@ -1,11 +1,14 @@
 package com.jaufarusadique.kouspace.kuzgunrocketteam;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 
@@ -22,14 +25,28 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.util.DisplayMetrics;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -44,70 +61,122 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
 
-public class HomeScreen extends AppCompatActivity implements  NavigationView.OnNavigationItemSelectedListener {
-    EditText        outputText;
-    TextView        inputText;
-    CardView        sendButton;
-    ScrollView      scrollView;
-    DrawerLayout    drawerLayout;
-    NavigationView  navigationView;
-    Menu            menu;
+public class HomeScreen extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
+    EditText outputText;
+    TextView inputText;
+    CardView sendButton;
+    CardView consoleViewButton;
+    CardView gpsViewButton;
+    ScrollView scrollView;
+    DrawerLayout drawerLayout;
+    NavigationView navigationView;
+    Menu menu;
 
-    private boolean     isBluetoothEnabled    =   false;
-
-    private BluetoothAdapter        bluetoothAdapter;
-    private Set<BluetoothDevice>    pairedDevices;
-    private BluetoothSocket         socket;
-    private String                  myArduino           =   "BOEING-747";
-    private BluetoothDevice         result              =   null;
-    private OutputStream            outputStream;
-    private InputStream             inputStream;
+    private boolean isBluetoothEnabled = false;
+    private GoogleMap mMap;
+    private static final int REQUEST_LOCATION = 123;
+    private BluetoothAdapter bluetoothAdapter;
+    private Set<BluetoothDevice> pairedDevices;
+    private BluetoothSocket socket;
+    private String myArduino = "BOEING-747";
+    private BluetoothDevice result = null;
+    private OutputStream outputStream;
+    private InputStream inputStream;
 
     volatile boolean stopWorker;
-    int              readBufferPosition;
-    byte[]           readBuffer;
-    Thread           workerThread;
+    int readBufferPosition;
+    byte[] readBuffer;
+    Thread workerThread;
     private static final int PERMISSION_REQUEST_STORAGE = 1000;
-    private  boolean proceedConnection = false;
+    private boolean proceedConnection = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_screen);
 
-        outputText      = findViewById(R.id.outputText);
-        inputText       = findViewById(R.id.inputText);
-        sendButton      = findViewById(R.id.sendButton);
-        scrollView      = findViewById(R.id.scrollView);
-        drawerLayout    = findViewById(R.id.drawer_layout);
-        navigationView  = findViewById(R.id.nav_view);
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
+        consoleViewButton = findViewById(R.id.consoleViewButton);
+        gpsViewButton = findViewById(R.id.gpsViewButton);
 
         menu = navigationView.getMenu();
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this,drawerLayout,toolbar,R.string.navigation_drawer_open,R.string.navigation_drawer_close);
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("message");
+        myRef.setValue("Hello, World!");
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
         readFromFile();
         navigationView.setNavigationItemSelectedListener(this);
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
-        != PackageManager.PERMISSION_GRANTED){
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},PERMISSION_REQUEST_STORAGE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_STORAGE);
         }
         scanForDevices();
-        sendButton.setOnClickListener(new View.OnClickListener() {
+        consoleViewButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                sendData();
+                AlertDialog.Builder builder = new AlertDialog.Builder(HomeScreen.this);
+                AlertDialog alertDialog = builder.create();
+                scrollView = alertDialog.findViewById(R.id.scrollView);
+                LayoutInflater layoutInflater = getLayoutInflater();
+                alertDialog.setView(layoutInflater.inflate(R.layout.console_layout, null));
+                alertDialog.show();
+                sendButton = alertDialog.findViewById(R.id.sendButton);
+                outputText = alertDialog.findViewById(R.id.outputText);
+                inputText = alertDialog.findViewById(R.id.inputText);
+                sendButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        sendData();
+                    }
+                });
+
+                /*
+                DisplayMetrics displayMetrics = new DisplayMetrics();
+                getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                int displayWidth = displayMetrics.widthPixels;
+                int displayHeight = displayMetrics.heightPixels;
+                WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
+                layoutParams.copyFrom(alertDialog.getWindow().getAttributes());
+                int dialogWindowWidth = (int) (displayWidth * 0.8f);
+                int dialogWindowHeight = (int) (displayHeight * 0.8f);
+                layoutParams.width = dialogWindowWidth;
+                layoutParams.height = dialogWindowHeight;
+                alertDialog.getWindow().setAttributes(layoutParams);*/
+            }
+        });
+        gpsViewButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(HomeScreen.this);
+                AlertDialog alertDialog = builder.create();
+                LayoutInflater layoutInflater = getLayoutInflater();
+                alertDialog.setView(layoutInflater.inflate(R.layout.gps_layout, null));
+                alertDialog.show();
+                SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                        .findFragmentById(R.id.map);
+                mapFragment.getMapAsync(HomeScreen.this);
+                if (ContextCompat.checkSelfPermission(HomeScreen.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(HomeScreen.this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                        Toast.makeText(HomeScreen.this, "Please give permission", Toast.LENGTH_SHORT).show();
+                    } else {
+                        ActivityCompat.requestPermissions(HomeScreen.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
+                    }
+                }
             }
         });
     }
 
-    public void connect(){
-        if(proceedConnection) {
+    public void connect() {
+        if (proceedConnection) {
             try {
                 Toast.makeText(this, "Connecting to " + myArduino, Toast.LENGTH_SHORT).show();
                 socket = (BluetoothSocket) result.getClass().getMethod("createRfcommSocket", new Class[]{int.class}).invoke(result, 1);
@@ -116,35 +185,33 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
             } catch (InvocationTargetException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             } catch (NoSuchMethodException e) {
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
             try {
                 socket.connect();
                 try {
                     outputStream = socket.getOutputStream();
                 } catch (IOException e) {
-                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-                    ;
+                    //Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
                 try {
                     inputStream = socket.getInputStream();
                     beginListenForData();
                 } catch (IOException e) {
-                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
 
             } catch (IOException e) {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
                 connectionDialog();
             }
-        }
-        else{
+        } else {
             drawerLayout.openDrawer(GravityCompat.START);
             Toast.makeText(this, "Please select a device", Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void connectionDialog(){
+    public void connectionDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(HomeScreen.this);
         builder.setMessage("Device not connected. Please connect.")
                 .setTitle("Connection")
@@ -159,7 +226,7 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
                 .setNegativeButton("Close App", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                       finish();
+                        finish();
                     }
                 });
         AlertDialog alertDialog = builder.create();
@@ -167,20 +234,21 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
 
     }
 
-    public void prepareData(String data){
+    public void prepareData(String data) {
         try {
             byte[] b = data.getBytes();
             outputStream.write(b);
             Toast.makeText(this, "Data Sent", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
-            if(e.getMessage().contains("Broken pipe")){
+            if (e.getMessage().contains("Broken pipe")) {
                 connectionDialog();
             }
         }
     }
 
     public void sendData() {
+        if (proceedConnection) {
             connectionVerification();
             if (socket.isConnected()) {
                 prepareData(outputText.getText().toString());
@@ -188,54 +256,55 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
             } else {
                 Toast.makeText(this, "Check your connection", Toast.LENGTH_SHORT).show();
             }
-
+        } else {
+            connect();
+        }
     }
 
-    public void connectionVerification(){
-        if(!socket.isConnected()) {
+    public void connectionVerification() {
+        if (!socket.isConnected()) {
             connectionDialog();
         }
 
     }
 
-    public void beginListenForData(){
-        final Handler handler   = new Handler();
-        final byte    delimetre = 10; //ASCII code for newline
+    public void beginListenForData() {
+        final Handler handler = new Handler();
+        final byte delimetre = 10; //ASCII code for newline
 
-        stopWorker          =   false;
-        readBufferPosition  = 0;
-        readBuffer          = new byte[1024];
-        workerThread        =   new Thread(new Runnable() {
+        stopWorker = false;
+        readBufferPosition = 0;
+        readBuffer = new byte[1024];
+        workerThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (!Thread.currentThread().isInterrupted() && !stopWorker){
+                while (!Thread.currentThread().isInterrupted() && !stopWorker) {
                     try {
                         int bytesAvailable = inputStream.available();
-                        if(bytesAvailable>0){
+                        if (bytesAvailable > 0) {
                             byte[] packetBytes = new byte[bytesAvailable];
                             inputStream.read(packetBytes);
-                            for(int i=0; i<bytesAvailable;i++){
-                                byte b =    packetBytes[i];
-                                if(b == delimetre){
+                            for (int i = 0; i < bytesAvailable; i++) {
+                                byte b = packetBytes[i];
+                                if (b == delimetre) {
                                     byte[] encodedBytes = new byte[readBufferPosition];
-                                    System.arraycopy(readBuffer,0,encodedBytes,0,encodedBytes.length);
-                                    final String data = new String(encodedBytes,"US-ASCII");
+                                    System.arraycopy(readBuffer, 0, encodedBytes, 0, encodedBytes.length);
+                                    final String data = new String(encodedBytes, "US-ASCII");
                                     readBufferPosition = 0;
 
                                     handler.post(new Runnable() {
                                         @Override
                                         public void run() {
-                                            inputText.setText(inputText.getText()+"\n"+data);
-                                            scrollView.post(new Runnable() {
+                                            inputText.setText(inputText.getText() + "\n" + data);
+                                            /*scrollView.post(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    scrollView.fullScroll(View.FOCUS_DOWN);
+                                                    //scrollView.fullScroll(View.FOCUS_DOWN);
                                                 }
-                                            });
+                                            });*/
                                         }
                                     });
-                                }
-                                else {
+                                } else {
                                     readBuffer[readBufferPosition++] = b;
                                 }
                             }
@@ -258,10 +327,9 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
 
     @Override
     public void onBackPressed() {
-        if(drawerLayout.isDrawerOpen(GravityCompat.START)){
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
-        }
-        else{
+        } else {
             super.onBackPressed();
             finish();
         }
@@ -275,22 +343,22 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
         return false;
     }
 
-    public void readFromFile(){
+    public void readFromFile() {
         FileReader fr = null;
-        File file = new File(getExternalFilesDir("Files"),"preferred_device");
+        File file = new File(getExternalFilesDir("Files"), "preferred_device");
         StringBuilder stringBuilder = new StringBuilder();
         try {
             fr = new FileReader(file);
             BufferedReader br = new BufferedReader(fr);
             String line = br.readLine();
-            while(line != null){
+            while (line != null) {
                 stringBuilder.append(line);
                 line = br.readLine();
             }
-            if(!stringBuilder.toString().equals("null")){
+            if (!stringBuilder.toString().equals("null")) {
                 proceedConnection = true;
                 myArduino = stringBuilder.toString();
-            }else{
+            } else {
                 proceedConnection = false;
             }
 
@@ -301,59 +369,63 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
         }
 
     }
-    public void writeToFile(String device){
-       File file = new File(getExternalFilesDir("Files"),"preferred_device");
-       FileOutputStream fos = null;
+
+    public void writeToFile(String device) {
+        File file = new File(getExternalFilesDir("Files"), "preferred_device");
+        FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(file);
             fos.write(device.getBytes());
         } catch (FileNotFoundException e) {
-           e.printStackTrace();
-        } catch (IOException e) { e.printStackTrace();
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public void scanForDevices(){
+    public void scanForDevices() {
         if (inputStream != null) {
             do {
                 workerThread.interrupt();
-            }while (workerThread.isAlive());
+            } while (workerThread.isAlive());
             try {
                 inputStream.close();
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
             inputStream = null;
         }
 
         if (outputStream != null) {
             try {
                 outputStream.close();
-            } catch (Exception e) {}
+            } catch (Exception e) {
+            }
             outputStream = null;
         }
-        if(socket!=null){
-                new Handler().postDelayed(new Runnable() {
-                    public void run() {
-                        try {
-                            socket.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }finally {
-                            socket = null;
-                        }
+        if (socket != null) {
+            new Handler().postDelayed(new Runnable() {
+                public void run() {
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } finally {
+                        socket = null;
                     }
-                }, 100L);
+                }
+            }, 100L);
         }
         if (!bluetoothAdapter.isEnabled()) {
             bluetoothAdapter.enable();
-            do{
-                if(bluetoothAdapter.isEnabled()){
-                    isBluetoothEnabled=true;
+            do {
+                if (bluetoothAdapter.isEnabled()) {
+                    isBluetoothEnabled = true;
                 }
-            }while (!isBluetoothEnabled);
+            } while (!isBluetoothEnabled);
         }
-        if(bluetoothAdapter.isEnabled()) {
+        if (bluetoothAdapter.isEnabled()) {
             pairedDevices = bluetoothAdapter.getBondedDevices();
-            for(BluetoothDevice bt : pairedDevices){
+            for (BluetoothDevice bt : pairedDevices) {
                 menu.add(bt.getName());
             }
             for (int i = 0; i < menu.size(); i++) {
@@ -378,14 +450,41 @@ public class HomeScreen extends AppCompatActivity implements  NavigationView.OnN
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == PERMISSION_REQUEST_STORAGE){
-            if(grantResults[0]==PackageManager.PERMISSION_GRANTED){
+        if (requestCode == PERMISSION_REQUEST_STORAGE) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show();
-            }
-            else{
+            } else {
                 Toast.makeText(this, "Permission Denied!", Toast.LENGTH_SHORT).show();
                 finish();
             }
         }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.M)
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+
+        // Add a marker in Sydney and move the camera
+        LatLng elginkan = new LatLng(7.2946291, 80.5907617);
+        LatLng KandyCityHotel = new LatLng(7.2924385, 80.6314225);
+
+        mMap.addMarker(new MarkerOptions().position(elginkan)
+                .title("Kandy")
+                .snippet("Jaufar's City")
+        );
+        //mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        mMap.addMarker(new MarkerOptions().position(KandyCityHotel)
+                .title("Unknown")
+                .snippet("Hotel")
+        );
+        mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(elginkan, 12));
+        PolylineOptions polylineOptions = new PolylineOptions().add(KandyCityHotel).add(elginkan).width(10).color(Color.RED);
+        mMap.addPolyline(polylineOptions);
+        mMap.setTrafficEnabled(true);
+        if (ActivityCompat.checkSelfPermission(HomeScreen.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        mMap.setMyLocationEnabled(true);
     }
 }
