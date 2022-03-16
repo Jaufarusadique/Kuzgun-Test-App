@@ -6,7 +6,14 @@
         <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/activity_home_screen.xml" value="0.22" />
         <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/connecting_progress.xml" value="0.33" />
         <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/console_layout.xml" value="0.1287037037037037" />
-        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/gps_layout.xml" value="0.14" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/fragment_console_screen.xml" value="0.196875" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/fragment_gps_screen.xml" value="0.2" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/fragment_home_screen.xml" value="0.1675925925925926" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/fragment_maps_layout.xml" value="0.12604166666666666" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/fragment_maps_screen.xml" value="0.1675925925925926" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/fragment_motor_screen.xml" value="0.196875" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/gps_layout.xml" value="0.22" />
+        <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/layout/maps_layout.xml" value="0.1" />
         <entry key="..\:/Users/Jaufarusadique/AndroidStudioProjects/KuzgunRocketTeam/app/src/main/res/menu/drawer_menu.xml" value="0.14114583333333333" />
       </map>
     </option>

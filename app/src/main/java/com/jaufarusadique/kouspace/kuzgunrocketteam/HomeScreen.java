@@ -11,8 +11,12 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
 import android.Manifest;
+import android.app.Activity;
+import android.app.Fragment;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -26,12 +30,14 @@ import android.os.Handler;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.util.DisplayMetrics;
+import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -61,45 +67,46 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Set;
 
+import static com.jaufarusadique.kouspace.kuzgunrocketteam.console_screen.inputText;
+import static com.jaufarusadique.kouspace.kuzgunrocketteam.console_screen.scrollView;
+import static com.jaufarusadique.kouspace.kuzgunrocketteam.gps_screen.coordinate;
+
 public class HomeScreen extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener, OnMapReadyCallback {
-    EditText outputText;
-    TextView inputText;
-    CardView sendButton;
-    CardView consoleViewButton;
-    CardView gpsViewButton;
-    ScrollView scrollView;
-    DrawerLayout drawerLayout;
+    static DrawerLayout drawerLayout;
     NavigationView navigationView;
     Menu menu;
 
     private boolean isBluetoothEnabled = false;
+    private boolean isMapInflated      = false;
     private GoogleMap mMap;
     private static final int REQUEST_LOCATION = 123;
     private BluetoothAdapter bluetoothAdapter;
     private Set<BluetoothDevice> pairedDevices;
-    private BluetoothSocket socket;
-    private String myArduino = "BOEING-747";
-    private BluetoothDevice result = null;
-    private OutputStream outputStream;
-    private InputStream inputStream;
+    private static BluetoothSocket socket;
+    private static String myArduino = "BOEING-747";
+    private static BluetoothDevice result = null;
+    private static OutputStream outputStream;
+    private static InputStream inputStream;
+    private SupportMapFragment mapFragment;
 
-    volatile boolean stopWorker;
-    int readBufferPosition;
-    byte[] readBuffer;
-    Thread workerThread;
+    static volatile boolean stopWorker;
+    static int readBufferPosition;
+    static byte[] readBuffer;
+    static Thread workerThread;
     private static final int PERMISSION_REQUEST_STORAGE = 1000;
-    private boolean proceedConnection = false;
+    private static boolean proceedConnection = false;
 
+    public console_screen console_screen;
+    public home_screen home_screen;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home_screen);
 
+        console_screen = new console_screen();
+        home_screen    = new home_screen();
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
-        consoleViewButton = findViewById(R.id.consoleViewButton);
-        gpsViewButton = findViewById(R.id.gpsViewButton);
-
         menu = navigationView.getMenu();
 
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -120,70 +127,21 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
             requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_STORAGE);
         }
         scanForDevices();
-        consoleViewButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(HomeScreen.this);
-                AlertDialog alertDialog = builder.create();
-                scrollView = alertDialog.findViewById(R.id.scrollView);
-                LayoutInflater layoutInflater = getLayoutInflater();
-                alertDialog.setView(layoutInflater.inflate(R.layout.console_layout, null));
-                alertDialog.show();
-                sendButton = alertDialog.findViewById(R.id.sendButton);
-                outputText = alertDialog.findViewById(R.id.outputText);
-                inputText = alertDialog.findViewById(R.id.inputText);
-                sendButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        sendData();
-                    }
-                });
 
-                /*
-                DisplayMetrics displayMetrics = new DisplayMetrics();
-                getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-                int displayWidth = displayMetrics.widthPixels;
-                int displayHeight = displayMetrics.heightPixels;
-                WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams();
-                layoutParams.copyFrom(alertDialog.getWindow().getAttributes());
-                int dialogWindowWidth = (int) (displayWidth * 0.8f);
-                int dialogWindowHeight = (int) (displayHeight * 0.8f);
-                layoutParams.width = dialogWindowWidth;
-                layoutParams.height = dialogWindowHeight;
-                alertDialog.getWindow().setAttributes(layoutParams);*/
-            }
-        });
-        gpsViewButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(HomeScreen.this);
-                AlertDialog alertDialog = builder.create();
-                LayoutInflater layoutInflater = getLayoutInflater();
-                alertDialog.setView(layoutInflater.inflate(R.layout.gps_layout, null));
-                alertDialog.show();
-                SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                        .findFragmentById(R.id.map);
-                mapFragment.getMapAsync(HomeScreen.this);
-                if (ContextCompat.checkSelfPermission(HomeScreen.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    if (ActivityCompat.shouldShowRequestPermissionRationale(HomeScreen.this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-                        Toast.makeText(HomeScreen.this, "Please give permission", Toast.LENGTH_SHORT).show();
-                    } else {
-                        ActivityCompat.requestPermissions(HomeScreen.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_LOCATION);
-                    }
-                }
-            }
-        });
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.frame_layout, home_screen).commit();
+
     }
 
-    public void connect() {
+    public static void connect() {
         if (proceedConnection) {
             try {
-                Toast.makeText(this, "Connecting to " + myArduino, Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, "Connecting to " + myArduino, Toast.LENGTH_SHORT).show();
                 socket = (BluetoothSocket) result.getClass().getMethod("createRfcommSocket", new Class[]{int.class}).invoke(result, 1);
             } catch (IllegalAccessException e) {
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             } catch (InvocationTargetException e) {
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             } catch (NoSuchMethodException e) {
                 //Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             }
@@ -202,17 +160,17 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
                 }
 
             } catch (IOException e) {
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
                 connectionDialog();
             }
         } else {
             drawerLayout.openDrawer(GravityCompat.START);
-            Toast.makeText(this, "Please select a device", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(HomeScreen.this, "Please select a device", Toast.LENGTH_SHORT).show();
         }
     }
 
-    public void connectionDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(HomeScreen.this);
+    public static void connectionDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(drawerLayout.getContext());
         builder.setMessage("Device not connected. Please connect.")
                 .setTitle("Connection")
                 .setCancelable(true)
@@ -226,7 +184,7 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
                 .setNegativeButton("Close App", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        finish();
+                        //finish();
                     }
                 });
         AlertDialog alertDialog = builder.create();
@@ -234,41 +192,41 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
 
     }
 
-    public void prepareData(String data) {
+    public static void prepareData(String data) {
         try {
             byte[] b = data.getBytes();
             outputStream.write(b);
-            Toast.makeText(this, "Data Sent", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(HomeScreen.this, "Data Sent", Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
-            Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
             if (e.getMessage().contains("Broken pipe")) {
                 connectionDialog();
             }
         }
     }
 
-    public void sendData() {
+    public static void sendData(String data) {
         if (proceedConnection) {
             connectionVerification();
             if (socket.isConnected()) {
-                prepareData(outputText.getText().toString());
+                prepareData(data);
 
             } else {
-                Toast.makeText(this, "Check your connection", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(HomeScreen.this, "Check your connection", Toast.LENGTH_SHORT).show();
             }
         } else {
             connect();
         }
     }
 
-    public void connectionVerification() {
+    public static void connectionVerification() {
         if (!socket.isConnected()) {
             connectionDialog();
         }
 
     }
 
-    public void beginListenForData() {
+    public static void beginListenForData() {
         final Handler handler = new Handler();
         final byte delimetre = 10; //ASCII code for newline
 
@@ -295,13 +253,18 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
                                     handler.post(new Runnable() {
                                         @Override
                                         public void run() {
-                                            inputText.setText(inputText.getText() + "\n" + data);
-                                            /*scrollView.post(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    //scrollView.fullScroll(View.FOCUS_DOWN);
-                                                }
-                                            });*/
+                                            if(gps_screen.gpsEnabled){
+                                                coordinate.setText(data);
+                                            }
+                                            else {
+                                                inputText.setText(inputText.getText() + "\n" + data);
+                                                scrollView.post(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        scrollView.fullScroll(View.FOCUS_DOWN);
+                                                    }
+                                                });
+                                            }
                                         }
                                     });
                                 } else {
@@ -311,7 +274,7 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
                         }
                     } catch (IOException e) {
                         stopWorker = true;
-                        Toast.makeText(HomeScreen.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(HomeScreen.this, e.getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -330,8 +293,9 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
-            finish();
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.replace(R.id.frame_layout, home_screen).commit();
+            //finish();
         }
     }
 
