@@ -3,12 +3,163 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context=".motor_screen">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+        android:orientation="vertical">
 
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10sp"
+            android:layout_marginTop="10sp"
+            android:layout_marginRight="10sp"
+            android:layout_marginBottom="10sp"
+            app:cardBackgroundColor="@color/colorPrimaryDark"
+            app:cardCornerRadius="20sp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10sp"
+                    android:layout_marginBottom="10sp"
+                    android:text="Motor - 1"
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/anticlockwise_1"
+                android:layout_gravity="center"
+                android:layout_width="50sp"
+                android:layout_height="50sp"
+                android:rotationX="180"
+                android:layout_weight="1"
+                android:src="@drawable/direction_icon" />
+
+            <ImageView
+                android:id="@+id/gear_1"
+                android:layout_gravity="center"
+                android:layout_width="150sp"
+                android:layout_height="150sp"
+                android:layout_weight="1"
+                android:src="@drawable/gear_icon" />
+
+            <ImageView
+                android:id="@+id/clockwise_1"
+                android:layout_gravity="center"
+                android:layout_width="50sp"
+                android:layout_height="50sp"
+                android:rotationX="180"
+                android:rotationY="180"
+                android:layout_weight="1"
+                android:src="@drawable/direction_icon" />
+        </LinearLayout>
+
+        <SeekBar
+            android:id="@+id/pwm_1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <ImageView
+            android:id="@+id/swap_1"
+            android:layout_gravity="center"
+            android:layout_width="30sp"
+            android:layout_height="40sp"
+            android:layout_weight="1"
+            android:src="@drawable/swap_icon" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10sp"
+            android:layout_marginTop="10sp"
+            android:layout_marginRight="10sp"
+            android:layout_marginBottom="10sp"
+            app:cardBackgroundColor="@color/colorPrimaryDark"
+            app:cardCornerRadius="20sp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10sp"
+                    android:layout_marginBottom="10sp"
+                    android:text="Motor - 2"
+                    android:textAlignment="center"
+                    android:textColor="@android:color/white"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+        </androidx.cardview.widget.CardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/anticlockwise_2"
+                android:layout_gravity="center"
+                android:layout_width="50sp"
+                android:layout_height="50sp"
+                android:rotationX="180"
+                android:layout_weight="1"
+                android:src="@drawable/direction_icon" />
+
+            <ImageView
+                android:id="@+id/gear_2"
+                android:layout_gravity="center"
+                android:layout_width="150sp"
+                android:layout_height="150sp"
+                android:layout_weight="1"
+                android:src="@drawable/gear_icon" />
+
+            <ImageView
+                android:id="@+id/clockwise_2"
+                android:layout_gravity="center"
+                android:layout_width="50sp"
+                android:layout_height="50sp"
+                android:rotationX="180"
+                android:rotationY="180"
+                android:layout_weight="1"
+                android:src="@drawable/direction_icon" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/swap_2"
+            android:layout_width="30sp"
+            android:layout_height="40sp"
+            android:layout_weight="1"
+            android:layout_gravity="center"
+            android:src="@drawable/swap_icon" />
+
+        <SeekBar
+            android:id="@+id/pwm_2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
 </FrameLayout>

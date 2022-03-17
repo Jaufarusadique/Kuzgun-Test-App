@@ -13,6 +13,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 public class console_screen extends Fragment {
+    public static boolean consoleEnabled = false;
     public static View view;
     public static EditText outputText;
     public static TextView inputText;
@@ -50,6 +51,8 @@ public class console_screen extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        consoleEnabled = true;
+        gps_screen.gpsEnabled=false;
         view   = inflater.inflate(R.layout.fragment_console_screen, container, false);
         scrollView  = view.findViewById(R.id.scrollView);
         sendButton  = view.findViewById(R.id.sendButton);

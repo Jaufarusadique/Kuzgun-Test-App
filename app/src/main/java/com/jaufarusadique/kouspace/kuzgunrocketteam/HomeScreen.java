@@ -51,8 +51,11 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -115,6 +118,21 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("message");
         myRef.setValue("Hello, World!");
+
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                String value = dataSnapshot.getValue(String.class);
+                if(gps_screen.gpsEnabled){
+                    coordinate.setText(value);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
 
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawerLayout.addDrawerListener(toggle);
@@ -256,7 +274,7 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
                                             if(gps_screen.gpsEnabled){
                                                 coordinate.setText(data);
                                             }
-                                            else {
+                                            else if(com.jaufarusadique.kouspace.kuzgunrocketteam.console_screen.consoleEnabled){
                                                 inputText.setText(inputText.getText() + "\n" + data);
                                                 scrollView.post(new Runnable() {
                                                     @Override
