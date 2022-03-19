@@ -101,6 +101,9 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
 
     public console_screen console_screen;
     public home_screen home_screen;
+
+    public static final String SHARED_PREFS = "sharedPrefs";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -148,6 +151,7 @@ public class HomeScreen extends AppCompatActivity implements NavigationView.OnNa
 
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.frame_layout, home_screen).commit();
+
 
     }
 

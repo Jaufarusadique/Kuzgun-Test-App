@@ -1,12 +1,19 @@
 package com.jaufarusadique.kouspace.kuzgunrocketteam;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -14,6 +21,7 @@ import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Toast;
@@ -32,13 +40,21 @@ public class motor_screen extends Fragment {
     public ImageView swap_2;
     public SeekBar   pwm_1;
     public SeekBar   pwm_2;
+    public CardView  motor_1_settings_button;
+    public CardView  motor_2_settings_button;
 
-    private static final String motor_1_clockwise = "M1C";
-    private static final String motor_1_anticlockwise = "M1AC";
-    private static final String motor_2_clockwise = "M2C";
-    private static final String motor_2_anticlockwise = "M2AC";
-    private static final String motor_1_swap = "M1S";
-    private static final String motor_2_swap = "M2S";
+    private static final String PREF_MOTOR_1_CLOCKWISE          = "pref_motor_1_clockwise";
+    private static final String PREF_MOTOR_1_ANTICLOCKWISE      = "pref_motor_1_anticlockwise";
+    private static final String PREF_MOTOR_2_CLOCKWISE          = "pref_motor_2_clockwise";
+    private static final String PREF_MOTOR_2_ANTICLOCKWISE      = "pref_motor_2_anticlockwise";
+    private static final String PREF_MOTOR_1_SWAP               = "pref_motor_1_swap";
+    private static final String PREF_MOTOR_2_SWAP               = "pref_motor_2_swap";
+    private static       String VAL_MOTOR_1_CLOCKWISE           = "";
+    private static       String VAL_MOTOR_1_ANTICLOCKWISE       = "";
+    private static       String VAL_MOTOR_2_CLOCKWISE           = "";
+    private static       String VAL_MOTOR_2_ANTICLOCKWISE       = "";
+    private static       String VAL_MOTOR_1_SWAP                = "";
+    private static       String VAL_MOTOR_2_SWAP                = "";
     private RotateAnimation rotate;
 
     private static final String ARG_PARAM1 = "param1";
@@ -79,6 +95,7 @@ public class motor_screen extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        loadPrefs();
         view = inflater.inflate(R.layout.fragment_motor_screen, container, false);
         gear_1=view.findViewById(R.id.gear_1);
         gear_2=view.findViewById(R.id.gear_2);
@@ -90,6 +107,8 @@ public class motor_screen extends Fragment {
         swap_2=view.findViewById(R.id.swap_2);
         pwm_1=view.findViewById(R.id.pwm_1);
         pwm_2=view.findViewById(R.id.pwm_2);
+        motor_1_settings_button=view.findViewById(R.id.motor_1_settings_button);
+        motor_2_settings_button=view.findViewById(R.id.motor_2_settings_button);
 
         pwm_1.setMax(255);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -111,9 +130,10 @@ public class motor_screen extends Fragment {
                     @SuppressLint("ClickableViewAccessibility")
                     @Override
                     public void run() {
+                        loadPrefs();
                         while (motor_1_anticlockwise_thread_status) {
                             try {
-                                HomeScreen.sendData("j");
+                                HomeScreen.sendData(VAL_MOTOR_1_ANTICLOCKWISE);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -148,9 +168,10 @@ public class motor_screen extends Fragment {
                     @SuppressLint("ClickableViewAccessibility")
                     @Override
                     public void run() {
+                        loadPrefs();
                         while (motor_1_clockwise_thread_status) {
                             try {
-                                HomeScreen.sendData("j");
+                                HomeScreen.sendData(VAL_MOTOR_1_CLOCKWISE);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -184,9 +205,10 @@ public class motor_screen extends Fragment {
                     @SuppressLint("ClickableViewAccessibility")
                     @Override
                     public void run() {
+                        loadPrefs();
                         while (motor_2_anticlockwise_thread_status) {
                             try {
-                                HomeScreen.sendData("j");
+                                HomeScreen.sendData(VAL_MOTOR_2_ANTICLOCKWISE);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -220,9 +242,10 @@ public class motor_screen extends Fragment {
                     @SuppressLint("ClickableViewAccessibility")
                     @Override
                     public void run() {
+                        loadPrefs();
                         while (motor_2_clockwise_thread_status) {
                             try {
-                                HomeScreen.sendData("j");
+                                HomeScreen.sendData(VAL_MOTOR_2_CLOCKWISE);
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -248,13 +271,15 @@ public class motor_screen extends Fragment {
         swap_1.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                HomeScreen.sendData(motor_1_swap);
+                loadPrefs();
+                HomeScreen.sendData(VAL_MOTOR_1_SWAP);
             }
         });
         swap_2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                HomeScreen.sendData(motor_2_swap);
+                loadPrefs();
+                HomeScreen.sendData(VAL_MOTOR_2_SWAP);
             }
         });
         pwm_1.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -289,7 +314,97 @@ public class motor_screen extends Fragment {
 
             }
         });
+        motor_1_settings_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                loadPrefs();
+                EditText editText_anticlockwise_1_settings;
+                EditText editText_clockwise_1_settings;
+                EditText editText_swap_1_settings;
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                View view1 = getLayoutInflater().inflate(R.layout.motor_1_settings,null);
+                builder.setView(view1);
+                builder.setTitle("Motor 1 - Settings");
 
+                editText_anticlockwise_1_settings  =   view1.findViewById(R.id.editText_anticlockwise_1_settings);
+                editText_clockwise_1_settings      =   view1.findViewById(R.id.editText_clockwise_1_settings);
+                editText_swap_1_settings           =   view1.findViewById(R.id.editText_swap_1_settings);
+
+                editText_anticlockwise_1_settings.setText(VAL_MOTOR_1_ANTICLOCKWISE);
+                editText_clockwise_1_settings.setText(VAL_MOTOR_1_CLOCKWISE);
+                editText_swap_1_settings.setText(VAL_MOTOR_1_SWAP);
+
+                builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        SharedPreferences sharedPreferences = getActivity().getSharedPreferences(HomeScreen.SHARED_PREFS, Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString(PREF_MOTOR_1_CLOCKWISE,editText_clockwise_1_settings.getText().toString());
+                        editor.putString(PREF_MOTOR_1_ANTICLOCKWISE,editText_anticlockwise_1_settings.getText().toString());
+                        editor.putString(PREF_MOTOR_1_SWAP,editText_swap_1_settings.getText().toString());
+                        editor.apply();
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                });
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+            }
+        });
+        motor_2_settings_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                loadPrefs();
+                EditText editText_anticlockwise_2_settings;
+                EditText editText_clockwise_2_settings;
+                EditText editText_swap_2_settings;
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                View view1 = getLayoutInflater().inflate(R.layout.motor_2_settings,null);
+                builder.setView(view1);
+                builder.setTitle("Motor 2 - Settings");
+
+                editText_anticlockwise_2_settings  =   view1.findViewById(R.id.editText_anticlockwise_2_settings);
+                editText_clockwise_2_settings      =   view1.findViewById(R.id.editText_clockwise_2_settings);
+                editText_swap_2_settings           =   view1.findViewById(R.id.editText_swap_2_settings);
+
+                editText_anticlockwise_2_settings.setText(VAL_MOTOR_2_ANTICLOCKWISE);
+                editText_clockwise_2_settings.setText(VAL_MOTOR_2_CLOCKWISE);
+                editText_swap_2_settings.setText(VAL_MOTOR_2_SWAP);
+
+                builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        SharedPreferences sharedPreferences = getActivity().getSharedPreferences(HomeScreen.SHARED_PREFS, Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString(PREF_MOTOR_2_CLOCKWISE,editText_clockwise_2_settings.getText().toString());
+                        editor.putString(PREF_MOTOR_2_ANTICLOCKWISE,editText_anticlockwise_2_settings.getText().toString());
+                        editor.putString(PREF_MOTOR_2_SWAP,editText_swap_2_settings.getText().toString());
+                        editor.apply();
+                    }
+                });
+                builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                });
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+            }
+        });
         return view;
+    }
+    public void loadPrefs(){
+        SharedPreferences sharedPreferences = getActivity().getSharedPreferences(HomeScreen.SHARED_PREFS,Context.MODE_PRIVATE);
+        VAL_MOTOR_1_CLOCKWISE     = sharedPreferences.getString(PREF_MOTOR_1_CLOCKWISE,"");
+        VAL_MOTOR_1_ANTICLOCKWISE = sharedPreferences.getString(PREF_MOTOR_1_ANTICLOCKWISE,"");
+        VAL_MOTOR_2_CLOCKWISE     = sharedPreferences.getString(PREF_MOTOR_2_CLOCKWISE,"");
+        VAL_MOTOR_2_ANTICLOCKWISE = sharedPreferences.getString(PREF_MOTOR_2_ANTICLOCKWISE,"");
+        VAL_MOTOR_1_SWAP          = sharedPreferences.getString(PREF_MOTOR_1_SWAP,"");
+        VAL_MOTOR_2_SWAP          = sharedPreferences.getString(PREF_MOTOR_2_SWAP,"");
     }
 }

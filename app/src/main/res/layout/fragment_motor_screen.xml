@@ -13,6 +13,7 @@
         android:orientation="vertical">
 
         <androidx.cardview.widget.CardView
+            android:id="@+id/motor_1_settings_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="10sp"
@@ -87,6 +88,7 @@
             android:src="@drawable/swap_icon" />
 
         <androidx.cardview.widget.CardView
+            android:id="@+id/motor_2_settings_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="10sp"

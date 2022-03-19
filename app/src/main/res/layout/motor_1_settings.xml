@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10sp"
+        android:layout_marginBottom="10sp">
+
+        <ImageView
+            android:id="@+id/anticlockwise_1_settings"
+            android:layout_gravity="center"
+            android:layout_width="40sp"
+            android:layout_height="40sp"
+            android:rotationX="180"
+            android:layout_weight="1"
+            android:src="@drawable/direction_icon" />
+
+        <EditText
+            android:id="@+id/editText_anticlockwise_1_settings"
+            android:layout_marginRight="10sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:text="j" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10sp"
+        android:layout_marginBottom="10sp">
+
+        <ImageView
+            android:id="@+id/clockwise_1_settings"
+            android:layout_gravity="center"
+            android:layout_width="40sp"
+            android:layout_height="40sp"
+            android:rotationX="180"
+            android:rotationY="180"
+            android:layout_weight="1"
+            android:src="@drawable/direction_icon" />
+
+        <EditText
+            android:id="@+id/editText_clockwise_1_settings"
+            android:layout_marginRight="10sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:text="j" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10sp"
+        android:layout_marginBottom="10sp">
+
+        <ImageView
+            android:id="@+id/swap_1_settings"
+            android:layout_gravity="center"
+            android:layout_width="40sp"
+            android:layout_height="40sp"
+            android:layout_weight="1"
+            android:src="@drawable/swap_icon" />
+
+        <EditText
+            android:id="@+id/editText_swap_1_settings"
+            android:layout_marginRight="10sp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:text="j" />
+
+    </LinearLayout>
+
+</LinearLayout>
